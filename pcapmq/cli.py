@@ -62,7 +62,7 @@ def main(interface, filter, topic, broker_url, payload_format):
             decoded_packet = decode(packet)
             message = payload_format.format(timestamp, decoded_packet)
             if client:
-                asyncio.get_event_loop().run_until_complete(client.publish(topic, message.encode()))
+                asyncio.get_event_loop().run_until_complete(client.publish(topic, message))
             click.echo(message)
 
     except KeyboardInterrupt:
