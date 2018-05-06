@@ -2,12 +2,26 @@
 
 """Console script for pcapmq."""
 import sys
+import logging
+import asyncio
 import click
 
 import pcap
 import dpkt
 import ipaddress
-import paho.mqtt.client as mqtt
+from hbmqtt.client import MQTTClient, ClientException
+
+
+@asyncio.coroutine
+def uptime_coro(broker_url):
+    client = MQTTClient()
+    yield from client.connect(broker_url)
+    return client
+
+
+@asyncio.coroutine
+def downtime_coro(client):
+    yield from client.disconnect()
 
 
 @click.command()
@@ -20,16 +34,15 @@ import paho.mqtt.client as mqtt
                                                 "track down particular device")
 @click.option('--topic', default="pcapmq/result", help="MQTT topic. Default "
                                                        " is pcapmq/result")
-@click.option('--port', default=1883, help="MQTT broker port, default is 1883")
-@click.option('--broker', default=None, help="MQTT broker address")
+@click.option('--broker-url', default=None, help="MQTT broker url")
 @click.option('--payload-format', default="{} {}", help="MQTT payload format. "
                                                         "Default is '{} {}'")
-def main(interface, filter, topic, port, broker, payload_format):
+def main(interface, filter, topic, broker_url, payload_format):
     """Send PCAP result to MQTT broker"""
-    client = mqtt.Client()
-    if broker:
-        client.connect(broker, port)
-        click.echo("connected to MQTT broker on %s:%s" % (broker, port))
+    
+    if broker_url:
+        client = asyncio.get_event_loop().run_until_complete(uptime_coro(broker_url))
+        click.echo("connected to MQTT broker")
     else:
         click.echo("no MQTT broker specified")      
 
@@ -48,7 +61,8 @@ def main(interface, filter, topic, port, broker, payload_format):
         for timestamp, packet in sniffer:
             decoded_packet = decode(packet)
             message = payload_format.format(timestamp, decoded_packet)
-            client.publish(topic, message)
+            if client:
+                client.publish(topic, message)
             click.echo(message)
 
     except KeyboardInterrupt:
@@ -60,9 +74,9 @@ def main(interface, filter, topic, port, broker, payload_format):
         click.echo("%d packets dropped by kernel" % dropped)
         click.echo("%d packets dropped by interface" %
                    dropped_by_interface)
-        if broker:
-            client.disconnect()
-        click.echo("disconnected from MQTT broker")
+        if client:
+            asyncio.get_event_loop().run_until_complete(downtime_coro(client))
+            click.echo("disconnected from MQTT broker")
 
     return 0
 
