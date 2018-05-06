@@ -22,7 +22,9 @@ import paho.mqtt.client as mqtt
                                                        " is pcapmq/result")
 @click.option('--port', default=1883, help="MQTT broker port, default is 1883")
 @click.option('--broker', default=None, help="MQTT broker address")
-def main(interface, filter, topic, port, broker):
+@click.option('--payload-format', default="{} {}", help="MQTT payload format. "
+                                                        "Default is '{} {}'")
+def main(interface, filter, topic, port, broker, payload_format):
     """Send PCAP result to MQTT broker"""
     client = mqtt.Client()
     if broker:
@@ -45,7 +47,7 @@ def main(interface, filter, topic, port, broker):
     try:
         for timestamp, packet in sniffer:
             decoded_packet = decode(packet)
-            message = '%d %r' % (timestamp, decoded_packet)
+            message = payload_format.format(timestamp, decoded_packet)
             client.publish(topic, message)
             click.echo(message)
 
