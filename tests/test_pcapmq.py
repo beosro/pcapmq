@@ -33,7 +33,7 @@ def test_command_line_interface():
     result = runner.invoke(cli.main)
     assert result.exit_code == 2, "should exit with error, need specifc broker"
     assert 'Missing argument "mqtt-broker"' in result.output
-    result = runner.invoke(cli.main, ['192.168.0.1'])
+    result = runner.invoke(cli.main, ['test.mosquitto.org'])
     assert result.exit_code != 0, "should exit with error, need root"
     assert OSError is type(result.exception)
     help_result = runner.invoke(cli.main, ['--help'])
