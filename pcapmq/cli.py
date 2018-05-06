@@ -21,12 +21,15 @@ import paho.mqtt.client as mqtt
 @click.option('--topic', default="pcapmq/result", help="MQTT topic. Default "
                                                        " is pcapmq/result")
 @click.option('--port', default=1883, help="MQTT broker port, default is 1883")
-@click.argument('mqtt-broker')
-def main(interface, filter, topic, port, mqtt_broker):
+@click.option('--broker', default=None, help="MQTT broker address")
+def main(interface, filter, topic, port, broker):
     """Send PCAP result to MQTT broker"""
     client = mqtt.Client()
-    client.connect(mqtt_broker, port)
-    click.echo("connected to MQTT broker on %s:%s" % (mqtt_broker, port))
+    if broker:
+        client.connect(broker, port)
+        click.echo("connected to MQTT broker on %s:%s" % (broker, port))
+    else:
+        click.echo("no MQTT broker specified")      
 
     sniffer = pcap.pcap(name=interface, promisc=True,
                         timeout_ms=50, immediate=True)
@@ -55,7 +58,8 @@ def main(interface, filter, topic, port, mqtt_broker):
         click.echo("%d packets dropped by kernel" % dropped)
         click.echo("%d packets dropped by interface" %
                    dropped_by_interface)
-        client.disconnect()
+        if broker:
+            client.disconnect()
         click.echo("disconnected from MQTT broker")
 
     return 0

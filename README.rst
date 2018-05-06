@@ -52,12 +52,12 @@ Configuration
 Usage
 --------
 
-* Listening all UDP and ARP packet, send them to pcapmq/results topic
+* Listening all UDP and ARP packet, display only, no MQTT
 ```
-sudo pcapmq --filter "udp or arp" MQTT_BROKER_ADDRESS
+sudo pcapmq --filter "udp or arp"
 ```
 
 * Send message to broker on 192.168.0.10 under topic devices/1/online, when found specific device's MAC address
 ```
-sudo pcapmq --filter "ether src xx:xx:xx:xx:xx:xx" --topic devices/1/online 192.168.0.10
+sudo pcapmq --filter "ether src xx:xx:xx:xx:xx:xx" --topic devices/1/online --broker 192.168.0.10
 ```
