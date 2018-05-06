@@ -7,6 +7,7 @@ import click
 import pcap
 import dpkt
 import ipaddress
+import paho.mqtt.client as mqtt
 
 
 @click.command()
@@ -17,8 +18,16 @@ import ipaddress
                                                 " 'udp or arp'. Use 'ether "
                                                 "src xx:xx:xx:xx:xx:xx' to "
                                                 "track down particular device")
-def main(interface, filter):
-    """Console script for pcapmq."""
+@click.option('--topic', default="pcapmq/result", help="MQTT topic. Default "
+                                                       " is pcapmq/result")
+@click.option('--port', default=1883, help="MQTT broker port, default is 1883")
+@click.argument('mqtt-broker')
+def main(interface, filter, topic, port, mqtt_broker):
+    """Send PCAP result to MQTT broker"""
+    client = mqtt.Client()
+    client.connect(mqtt_broker, port)
+    click.echo("connected to MQTT broker on %s:%s" % (mqtt_broker, port))
+
     sniffer = pcap.pcap(name=interface, promisc=True,
                         timeout_ms=50, immediate=True)
     sniffer.setfilter(filter)
@@ -28,34 +37,26 @@ def main(interface, filter):
         pcap.DLT_EN10MB: dpkt.ethernet.Ethernet
     }[sniffer.datalink()]
     
-    click.echo('listening on %s: %s' % (sniffer.name, sniffer.filter))
+    click.echo("listening on %s: %s" % (sniffer.name, sniffer.filter))
 
     try:
-        for ts, pkt in sniffer:
-            d_pkt = decode(pkt)
-            # if type(d_pkt.data) is dpkt.arp.ARP:
-            #     src_ip = str(ipaddress.ip_address(d_pkt.data.spa))
-            #     dest_ip = str(ipaddress.ip_address(d_pkt.data.tpa))
-            #     if src_ip == '192.168.86.95' or dest_ip == '192.168.86.95':
-            #         continue
-            #     print("ARP: %s => %s" % (src_ip, dest_ip))
-
-            # elif type(d_pkt.data) is dpkt.ip.IP:
-            #     dest_ip = str(ipaddress.ip_address(d_pkt.data.dst))
-            #     if dest_ip == '192.168.86.95':
-            #         continue
-            #     print("UDP => %s" % (dest_ip))
-    
-            msg = '%d %r' % (ts, d_pkt)
-            click.echo(msg)
+        for timestamp, packet in sniffer:
+            decoded_packet = decode(packet)
+            message = '%d %r' % (timestamp, decoded_packet)
+            client.publish(topic, message)
+            click.echo(message)
 
     except KeyboardInterrupt:
         pass
 
     finally:
-        nrecv, ndrop, nifdrop = sniffer.stats()
-        click.echo('\n%d packets received by filter' % nrecv)
-        click.echo('%d packets dropped by kernel' % ndrop)
+        received, dropped, dropped_by_interface = sniffer.stats()
+        click.echo("\n%d packets received by filter" % received)
+        click.echo("%d packets dropped by kernel" % dropped)
+        click.echo("%d packets dropped by interface" %
+                   dropped_by_interface)
+        client.disconnect()
+        click.echo("disconnected from MQTT broker")
 
     return 0
 

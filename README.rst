@@ -30,7 +30,7 @@ Features
 --------
 
 * Sniffer network packet
-* (TODO) Publish message to MQTT when found particular packet on network
+* Publish message to MQTT when found particular packet on network
 
 
 Installation
@@ -38,6 +38,7 @@ Installation
 
 ```
 sudo apt install libpython3-dev libpcap-dev
+
 pip install pcapmq
 ```
 
@@ -51,21 +52,12 @@ Configuration
 Usage
 --------
 
-* Listening all UDP and ARP packet
+* Listening all UDP and ARP packet, send them to pcapmq/results topic
 ```
-sudo pcapmq --filter "udp or arp"
-```
-
-* Monitor specific device
-```
-sudo pcapmq --filter "ether src xx:xx:xx:xx:xx:xx"
+sudo pcapmq --filter "udp or arp" MQTT_BROKER_ADDRESS
 ```
 
-
-Credits
--------
-
-This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
-
-.. _Cookiecutter: https://github.com/audreyr/cookiecutter
-.. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
+* Send message to broker on 192.168.0.10 under topic devices/1/online, when found specific device's MAC address
+```
+sudo pcapmq --filter "ether src xx:xx:xx:xx:xx:xx" --topic devices/1/online 192.168.0.10
+```
