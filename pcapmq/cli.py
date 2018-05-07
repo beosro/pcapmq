@@ -39,9 +39,10 @@ def downtime_coro(client):
                                                         "Default is '{} {}'")
 def main(interface, filter, topic, broker_url, payload_format):
     """Send PCAP result to MQTT broker"""
-    
+    client = None
     if broker_url:
-        client = asyncio.get_event_loop().run_until_complete(uptime_coro(broker_url))
+        client = asyncio.get_event_loop().run_until_complete(
+                uptime_coro(broker_url))
         click.echo("connected to MQTT broker")
     else:
         click.echo("no MQTT broker specified")      
@@ -60,9 +61,13 @@ def main(interface, filter, topic, broker_url, payload_format):
     try:
         for timestamp, packet in sniffer:
             decoded_packet = decode(packet)
-            message = payload_format.format(timestamp, decoded_packet)
+            message = payload_format.format(timestamp, decoded_packet.src,
+                                            decoded_packet)
             if client:
-                asyncio.get_event_loop().run_until_complete(client.publish(topic, message.encode()))
+                formatted_topic = topic.format(timestamp, decoded_packet.src,
+                                               decoded_packet)
+                asyncio.get_event_loop().run_until_complete(
+                        client.publish(formatted_topic, message.encode()))
             click.echo(message)
 
     except KeyboardInterrupt:
