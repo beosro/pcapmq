@@ -57,7 +57,7 @@ Usage
 sudo pcapmq --filter "udp or arp"
 ```
 
-* Send message to broker on 192.168.0.10 under topic devices/1/online, when found specific device's MAC address
+* Send message to broker under topic devices/1/online, when found specific device's MAC address
 ```
-sudo pcapmq --filter "ether src xx:xx:xx:xx:xx:xx" --topic devices/1/online --broker 192.168.0.10
+sudo pcapmq --filter "ether src xx:xx:xx:xx:xx:xx" --topic devices/1/online --broker-url mqtt://username:password@localhost --payload-format "{0} - {1}"
 ```
